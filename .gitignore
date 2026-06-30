@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Datasets (too large for GitHub)
+datasets/
+
+# Trained models & large artifacts (too large for GitHub)
+recommendation/models/*.pkl
+recommendation/models/*.csv
+
+# Vectorized data
+vectorized_movies.csv
+
+# Environment variables
+.env
+
+# Jupyter
+.ipynb_checkpoints/
