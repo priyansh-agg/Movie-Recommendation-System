@@ -14,3 +14,5 @@ movie_to_index = pd.Series(
 ).to_dict()
 
 movie_metadata = pickle.load(open("recommendation/models/movie_metadata.pkl","rb"))
+
+metadata_lookup = movie_metadata.set_index("id").to_dict("index")

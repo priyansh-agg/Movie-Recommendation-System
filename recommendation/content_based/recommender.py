@@ -1,9 +1,10 @@
 import numpy as np
 from recommendation.content_based.loader import (
-    similarity,rating,movie_titles,movie_to_index
+    similarity,rating,movie_titles,movie_to_index,metadata_lookup
 )
 from recommendation.services.poster_service import fetch_poster
 from recommendation.content_based.explain import generate_explanation
+from recommendation.common.builder import build_recommendation
 
 def recommend(movie_list,top_n=5):
     """
@@ -52,15 +53,25 @@ def recommend(movie_list,top_n=5):
 
         explanation = generate_explanation(best_source,idx,similarity_score)
 
-        recommendations.append({
-        "id": int(movie_titles.iloc[idx].id),
-        "title": movie_titles.iloc[idx].title,
-        "poster": fetch_poster(movie_titles.iloc[idx].id),
-        "similarity": float(similarity_score),
-        "score": float(final_score),
-        "source_movie": movie_titles.iloc[best_source].title,
-        "explanation": explanation
-    })
+        tmdb_id = int(movie_titles.iloc[idx].id)
+        metadata = metadata_lookup.get(tmdb_id)
+
+        recommendations.append(
+            build_recommendation(
+                tmdb_id=tmdb_id,
+                title=movie_titles.iloc[idx].title,
+                poster=fetch_poster(tmdb_id),
+                metadata=metadata,
+                explanation={
+                    "engine": "content",
+                    "source_movie": movie_titles.iloc[best_source].title,
+                    "reasons": explanation,
+                },
+                content_score=float(similarity_score),
+                popularity_score=float(rating[idx][1]),
+                source="content"
+            )
+        )
 
         if len(recommendations) == top_n:
             break

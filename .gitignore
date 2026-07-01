@@ -30,6 +30,7 @@ datasets/
 # Trained models & large artifacts (too large for GitHub)
 recommendation/models/*.pkl
 recommendation/models/*.csv
+recommendation/collaborative/models/*.pkl
 
 # Vectorized data
 vectorized_movies.csv
