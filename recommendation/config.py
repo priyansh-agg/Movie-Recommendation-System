@@ -44,7 +44,7 @@ TRENDING_RECENCY_FRACTION = 0.20
 # Genre sections to display on the homepage.
 HOMEPAGE_GENRES = ["Action", "Comedy", "SciFi", "Drama"]
 
-# Map display names → search tokens for matching against metadata.
+# Map display names -> search tokens for matching against metadata.
 # Genres in the preprocessed metadata are lowercased, space-stripped tags
 # (e.g. "sciencefiction").  Multiple tokens are OR-matched.
 GENRE_SEARCH_TERMS = {
@@ -52,4 +52,27 @@ GENRE_SEARCH_TERMS = {
     "Comedy": ["comedy"],
     "SciFi": ["sciencefiction", "scifi", "science"],
     "Drama": ["drama"],
+    "Thriller": ["thriller"],
+    "Romance": ["romance"],
+    "Horror": ["horror"],
+    "Animation": ["animation"],
+    "Documentary": ["documentary"],
+    "Crime": ["crime"],
+    "Adventure": ["adventure"],
+    "Fantasy": ["fantasy"],
 }
+
+# ---------------------------------------------------------------------------
+# User Intelligence (Phase 3)
+# ---------------------------------------------------------------------------
+ONBOARDING_MOVIE_COUNT = 50
+ONBOARDING_MIN_SELECTIONS = 10
+AUTO_LIKE_THRESHOLD = 4.0
+AUTO_DISLIKE_THRESHOLD = 2.0
+
+# ---------------------------------------------------------------------------
+# Evaluation (Phase 5)
+# ---------------------------------------------------------------------------
+EVAL_K_VALUES = [5, 10, 20]
+EVAL_MAX_USERS = 50  # Limit for dev speed
+EVAL_RELEVANCE_THRESHOLD = 4.0  # Rating >= this is "relevant"
