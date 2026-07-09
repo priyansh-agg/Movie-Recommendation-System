@@ -26,12 +26,20 @@ from api.routers.feedback import router as feedback_router
 async def lifespan(app: FastAPI):
     """Warm up ML models at startup so the first request isn't slow."""
     print("[startup] Loading recommendation models...")
-    from recommendation.content_based.loader import similarity
+    from recommendation.content_based.loader import (
+        similarity, similarity_sparse, SIMILARITY_MODE, movie_titles,
+    )
     from recommendation.collaborative.recommender import model
+
+    if SIMILARITY_MODE == "sparse":
+        sim_info = f"Sparse similarity ({len(similarity_sparse):,} movies, top-50)"
+    else:
+        sim_info = f"Dense similarity matrix: {similarity.shape}"
 
     print(
         f"[startup] Models ready. "
-        f"Similarity matrix: {similarity.shape}, "
+        f"{sim_info}, "
+        f"Movies: {len(movie_titles):,}, "
         f"SVD model loaded."
     )
     yield

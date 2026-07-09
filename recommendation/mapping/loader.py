@@ -1,3 +1,10 @@
+"""
+MovieLens ↔ TMDB ID mapping layer.
+
+Uses the links file to convert between MovieLens movieIds and
+TMDB IDs.  Prefers the large dataset if available.
+"""
+
 from pathlib import Path
 
 import pandas as pd
@@ -7,7 +14,11 @@ from recommendation.services.poster_service import fetch_poster
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-LINKS_PATH = BASE_DIR / "datasets" / "movielens" / "links.csv"
+# Prefer large dataset links
+LARGE_LINKS = BASE_DIR / "datasets" / "movielens_large" / "link.csv"
+SMALL_LINKS = BASE_DIR / "datasets" / "movielens" / "links.csv"
+
+LINKS_PATH = LARGE_LINKS if LARGE_LINKS.exists() else SMALL_LINKS
 
 
 def _load_links():

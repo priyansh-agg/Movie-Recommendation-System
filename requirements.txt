@@ -11,3 +11,8 @@ uvicorn[standard]
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt<5
+sqlalchemy
+psycopg2-binary
+redis
+alembic
+nltk

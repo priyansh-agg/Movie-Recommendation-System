@@ -6,13 +6,14 @@ functions to access them.  ``get_current_user`` and
 ``get_optional_user`` are FastAPI ``Depends()`` callables that
 extract the JWT and resolve the user profile.
 
-To swap InMemoryUserRepository for PostgreSQL, change one import here.
+Phase 7: Swapped InMemoryUserRepository → PostgresUserRepository.
 """
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from recommendation.user.repository import InMemoryUserRepository
+from recommendation.db.postgres_repository import PostgresUserRepository
+from recommendation.db.redis_cache import RedisCache
 from recommendation.user.profile_service import ProfileService
 from recommendation.user.onboarding import OnboardingService
 from recommendation.user.interaction_service import InteractionService
@@ -26,20 +27,25 @@ from api.auth.jwt_handler import verify_token
 # Created once at module import time.  FastAPI's DI is synchronous
 # for these (no async overhead).
 
-_user_repo = InMemoryUserRepository()
+_user_repo = PostgresUserRepository()
 _profile_service = ProfileService(_user_repo)
 _onboarding_service = OnboardingService(_user_repo, _profile_service)
 _interaction_service = InteractionService(_user_repo)
 _recommendation_service = RecommendationService()
 _homepage_orchestrator = HomepageOrchestrator()
+_redis_cache = RedisCache()
 
 security = HTTPBearer(auto_error=False)
 
 
 # ── Service accessors ──────────────────────────────────────────────
 
-def get_user_repo() -> InMemoryUserRepository:
+def get_user_repo() -> PostgresUserRepository:
     return _user_repo
+
+
+def get_redis_cache() -> RedisCache:
+    return _redis_cache
 
 
 def get_profile_service() -> ProfileService:
