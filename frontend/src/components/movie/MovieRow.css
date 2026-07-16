@@ -1,0 +1,107 @@
+.movie-row {
+  position: relative;
+}
+
+.movie-row__title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 4px;
+}
+
+.movie-row__container {
+  position: relative;
+}
+
+/* Scroll track */
+.movie-row__scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 0 16px;
+  scrollbar-width: none;
+}
+
+.movie-row__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.movie-row__scroll > * {
+  scroll-snap-align: start;
+}
+
+/* Edge masks */
+.movie-row__container::before,
+.movie-row__container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.movie-row__container::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-primary), transparent);
+}
+
+.movie-row__container::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-primary), transparent);
+}
+
+/* Arrows */
+.movie-row__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.movie-row:hover .movie-row__arrow {
+  opacity: 1;
+}
+
+.movie-row__arrow:hover {
+  background: var(--glass-hover);
+}
+
+.movie-row__arrow--left { left: -16px; }
+.movie-row__arrow--right { right: -16px; }
+
+/* Skeleton */
+.movie-row__skeleton {
+  width: 180px;
+  flex-shrink: 0;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@media (max-width: 768px) {
+  .movie-row__arrow {
+    display: none;
+  }
+
+  .movie-row__skeleton {
+    width: 150px;
+  }
+}

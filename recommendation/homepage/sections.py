@@ -14,6 +14,7 @@ editorial     -- curated lists (popular, new releases, top rated)
 """
 
 import re
+import pandas as pd
 
 from recommendation.common.schemas import HomepageSection
 from recommendation.common.builder import build_recommendation
@@ -133,6 +134,9 @@ def build_trending(size=HOMEPAGE_SECTION_SIZE):
     most ratings in the most recent fraction of the timestamp range.
     """
     ratings_df = _get_ratings_df()
+
+    # Ensure timestamp is numeric (large dataset CSVs may load as strings)
+    ratings_df["timestamp"] = pd.to_numeric(ratings_df["timestamp"], errors="coerce")
 
     max_ts = ratings_df["timestamp"].max()
     min_ts = ratings_df["timestamp"].min()

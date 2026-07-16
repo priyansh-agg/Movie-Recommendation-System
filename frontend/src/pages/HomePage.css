@@ -1,0 +1,28 @@
+.home {
+  min-height: 100vh;
+}
+
+.home__content {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 32px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.home-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .home__content {
+    padding: 0 16px 40px;
+    gap: 32px;
+  }
+}

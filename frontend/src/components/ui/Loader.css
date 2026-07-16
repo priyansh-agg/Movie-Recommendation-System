@@ -1,0 +1,22 @@
+.loader {
+  display: inline-block;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: var(--bg-tertiary);
+  border-top-color: var(--accent-primary);
+  animation: spin 0.7s linear infinite;
+}
+
+.loader--sm { width: 20px; height: 20px; border-width: 2px; }
+.loader--md { width: 40px; height: 40px; border-width: 3px; }
+.loader--lg { width: 60px; height: 60px; border-width: 4px; }
+
+.loader-fullpage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 15, 0.85);
+  z-index: 9999;
+}
