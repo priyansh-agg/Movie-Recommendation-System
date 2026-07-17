@@ -46,6 +46,10 @@ def _get_ratings_df():
     global _ratings_df
     if _ratings_df is None:
         _ratings_df = load_ratings()
+        # Coerce timestamp to numeric once at load time (not per-call)
+        _ratings_df["timestamp"] = pd.to_numeric(
+            _ratings_df["timestamp"], errors="coerce"
+        )
     return _ratings_df
 
 
@@ -133,23 +137,30 @@ def build_trending(size=HOMEPAGE_SECTION_SIZE):
     Uses MovieLens timestamps to simulate recency: movies with the
     most ratings in the most recent fraction of the timestamp range.
     """
-    import json
-    from recommendation.collaborative.loader import DATASET_DIR
-    
-    trending_path = DATASET_DIR / "trending.json"
-    if not trending_path.exists():
-        # Fallback if not precomputed
-        return HomepageSection(title="Popular This Week", movies=[])
-        
-    with open(trending_path, "r") as f:
-        cached_movies = json.load(f)
+    ratings_df = _get_ratings_df()
+
+    max_ts = ratings_df["timestamp"].max()
+    min_ts = ratings_df["timestamp"].min()
+    cutoff = max_ts - (max_ts - min_ts) * TRENDING_RECENCY_FRACTION
+
+    recent = ratings_df[ratings_df["timestamp"] >= cutoff]
+
+    trending_counts = (
+        recent
+        .groupby("movieId")
+        .size()
+        .reset_index(name="recent_count")
+        .sort_values("recent_count", ascending=False)
+    )
 
     movies = []
-    for item in cached_movies:
+    for _, row in trending_counts.iterrows():
         if len(movies) >= size:
             break
-        movie_id = item["movie_id"]
-        tmdb_id = item["tmdb_id"]
+        movie_id = int(row["movieId"])
+        tmdb_id = movie_to_tmdb_id(movie_id)
+        if tmdb_id is None:
+            continue
         metadata = metadata_lookup.get(tmdb_id)
         if metadata is None:
             continue

@@ -59,7 +59,7 @@ def recommend(user_id=None, liked_movies=None, top_n=10):
         Ranked hybrid recommendations.
     """
 
-    if not user_id and not liked_movies:
+    if user_id is None and not liked_movies:
         return []
 
     # ── Stage 1: Generate candidates ────────────────────────────────

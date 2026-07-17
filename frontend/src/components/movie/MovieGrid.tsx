@@ -51,8 +51,8 @@ export default function MovieGrid({
       initial="hidden"
       animate="show"
     >
-      {movies.map((movie) => (
-        <motion.div key={movie.tmdbId} variants={item}>
+      {movies.map((movie, idx) => (
+        <motion.div key={`${movie.tmdbId}-${idx}`} variants={item}>
           <MovieCard movie={movie} />
         </motion.div>
       ))}

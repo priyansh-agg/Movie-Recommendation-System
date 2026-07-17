@@ -5,6 +5,7 @@ Run with:
     uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 """
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -42,6 +43,35 @@ async def lifespan(app: FastAPI):
         f"Movies: {len(movie_titles):,}, "
         f"SVD model loaded."
     )
+
+    # Pre-warm the anonymous homepage cache so the first request is instant
+    try:
+        from api.dependencies import get_homepage_orchestrator, get_redis_cache
+        from recommendation.db.redis_cache import TTL_HOMEPAGE
+
+        cache = get_redis_cache()
+        if cache.available and cache.get(cache.key_homepage(None)) is None:
+            print("[startup] Pre-warming homepage cache...")
+            orch = get_homepage_orchestrator()
+            sections = orch.get_homepage()
+            result = {
+                "sections": [
+                    {
+                        "section_id": s.section_id,
+                        "title": s.title,
+                        "section_type": s.section_type,
+                        "movies": [m.model_dump() for m in s.movies],
+                    }
+                    for s in sections
+                ]
+            }
+            cache.set(cache.key_homepage(None), result, TTL_HOMEPAGE)
+            print(f"[startup] Homepage cached ({len(sections)} sections, TTL {TTL_HOMEPAGE}s)")
+        else:
+            print("[startup] Homepage already cached, skipping pre-warm")
+    except Exception as e:
+        print(f"[startup] Homepage pre-warm failed (non-fatal): {e}")
+
     yield
     print("[shutdown] Cleaning up...")
 
@@ -57,9 +87,13 @@ app = FastAPI(
 )
 
 # ── CORS ────────────────────────────────────────────────────────────
+_cors_origins = os.environ.get(
+    "CORS_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=[o.strip() for o in _cors_origins],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +121,12 @@ async def value_error_handler(request: Request, exc: ValueError):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
+    import logging
+    from fastapi import HTTPException as FastAPIHTTPException
+    # Don't swallow HTTPExceptions — let FastAPI handle them
+    if isinstance(exc, FastAPIHTTPException):
+        raise exc
+    logging.getLogger("api").exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},

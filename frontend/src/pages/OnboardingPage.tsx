@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getHomepage } from '../api/movies';
+import client from '../api/client';
+import { useAuthStore } from '../stores/authStore';
 import type { MovieRec } from '../api/movies';
 import PageTransition from '../components/layout/PageTransition';
 import Button from '../components/ui/Button';
@@ -14,6 +16,8 @@ export default function OnboardingPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const fetchProfile = useAuthStore((s) => s.fetchProfile);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     document.title = 'Get Started — CINEMATIC';
@@ -49,13 +53,24 @@ export default function OnboardingPage() {
     });
   }, []);
 
-  const handleContinue = () => {
-    if (selected.size < 5) {
-      showToast('Please select at least 5 movies', 'error');
+  const handleContinue = async () => {
+    if (selected.size < 10) {
+      showToast('Please select at least 10 movies', 'error');
       return;
     }
-    showToast('Preferences saved! Enjoy your recommendations.', 'success');
-    navigate('/');
+    setSaving(true);
+    try {
+      await client.post('/users/onboarding', {
+        selected_tmdb_ids: Array.from(selected),
+      });
+      await fetchProfile();
+      showToast('Preferences saved! Enjoy your recommendations.', 'success');
+      navigate('/');
+    } catch {
+      showToast('Failed to save preferences. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -64,7 +79,7 @@ export default function OnboardingPage() {
         <div className="onboarding__header">
           <h1>Pick movies you enjoy</h1>
           <p>
-            Select at least 5 movies to calibrate your taste. The more you pick,
+            Select at least 10 movies to calibrate your taste. The more you pick,
             the better your recommendations.
           </p>
         </div>
@@ -115,12 +130,13 @@ export default function OnboardingPage() {
         <div className="onboarding__bottom">
           <span className="onboarding__count">
             {selected.size} selected
-            {selected.size < 5 && ` — pick ${5 - selected.size} more`}
+            {selected.size < 10 && ` — pick ${10 - selected.size} more`}
           </span>
           <Button
             variant="primary"
             size="lg"
-            disabled={selected.size < 5}
+            disabled={selected.size < 10 || saving}
+            loading={saving}
             onClick={handleContinue}
           >
             Continue

@@ -9,6 +9,7 @@ interface AuthState {
   userId: number | null;
   user: UserProfile | null;
   isAuthenticated: boolean;
+  isHydrated: boolean;
 }
 
 interface AuthActions {
@@ -21,7 +22,7 @@ interface AuthActions {
 
 type AuthStore = AuthState & AuthActions;
 
-const initialState: AuthState = {
+const initialState: Omit<AuthState, 'isHydrated'> = {
   token: null,
   refreshToken: null,
   userId: null,
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       ...initialState,
+      isHydrated: false,
 
       login: async (email, password) => {
         const data = await authApi.login(email, password);
@@ -62,7 +64,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch { /* profile fetch optional */ }
       },
 
-      logout: () => set(initialState),
+      logout: () => set({ ...initialState, isHydrated: true }),
 
       fetchProfile: async () => {
         if (!get().isAuthenticated) return;
@@ -84,6 +86,11 @@ export const useAuthStore = create<AuthStore>()(
         userId: state.userId,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.isHydrated = true;
+        }
+      },
     },
   ),
 );

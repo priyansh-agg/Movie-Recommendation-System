@@ -10,6 +10,7 @@ import MovieDetailPage from './pages/MovieDetailPage';
 import OnboardingPage from './pages/OnboardingPage';
 import WatchlistPage from './pages/WatchlistPage';
 import ProfilePage from './pages/ProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </ToastProvider>
   );

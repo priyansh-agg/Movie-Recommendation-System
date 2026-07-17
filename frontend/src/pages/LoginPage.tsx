@@ -33,9 +33,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
       showToast('Welcome back!', 'success');
-      navigate('/');
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Invalid email or password';
+      // Navigation handled by useEffect on isAuthenticated change
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Invalid email or password'
+          : 'Invalid email or password';
       setError(msg);
       showToast(msg, 'error');
     } finally {

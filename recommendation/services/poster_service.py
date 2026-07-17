@@ -29,7 +29,7 @@ def fetch_poster(movie_id):
         data = res.json()
         poster_path = data.get("poster_path")
         if poster_path:
-            url = "https://image.tmdb.org/t/p/w500" + poster_path
+            url = "https://image.tmdb.org/t/p/original" + poster_path
             _poster_cache[movie_id] = url
             return url
     except requests.RequestException:

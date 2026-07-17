@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Star, Clock, Globe, Heart, Bookmark, Eye, ArrowLeft,
 } from 'lucide-react';
-import { getSimilarMovies } from '../api/movies';
-import { getProfile, rateMovie, likeMovie, toggleWatchlist, markWatched } from '../api/user';
+import { getSimilarMovies, searchMovies } from '../api/movies';
+import { rateMovie, likeMovie, toggleWatchlist, markWatched } from '../api/user';
 import type { MovieRec } from '../api/movies';
 import PageTransition from '../components/layout/PageTransition';
 import MovieRow from '../components/movie/MovieRow';
 import RatingStars from '../components/movie/RatingStars';
 import Button from '../components/ui/Button';
+import Loader from '../components/ui/Loader';
 import { useAuthStore } from '../stores/authStore';
 import { useToast } from '../components/ui/Toast';
 import './MovieDetailPage.css';
@@ -26,34 +27,55 @@ export default function MovieDetailPage() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch similar movies
+  // First: try to find movie in cache
+  const cachedMovie = findMovieInCache(queryClient, tmdbId);
+
+  // If not in cache, we need to fetch it via search + similar
+  const { data: fetchedMovie, isLoading: loadingMovie } = useQuery({
+    queryKey: ['movie-detail', tmdbId],
+    queryFn: async (): Promise<MovieRec | null> => {
+      // Search by tmdbId to get the title
+      const searchData = await searchMovies(String(tmdbId), 5);
+      const match = searchData.results.find((r) => r.tmdbId === tmdbId);
+      if (!match) return null;
+
+      // Use similar movies to get full metadata
+      const similarData = await getSimilarMovies([match.title], 1);
+      // The API might return the source movie with metadata
+      // Build a stub with what we have
+      return {
+        movieId: null,
+        tmdbId: match.tmdbId,
+        title: match.title,
+        poster: null,
+        scores: { content: null, collaborative: null, popularity: null, hybrid: null },
+        metadata: similarData.recommendations[0]?.metadata || null,
+        source: 'detail',
+      };
+    },
+    staleTime: 10 * 60 * 1000,
+    enabled: tmdbId > 0 && !cachedMovie,
+  });
+
+  const movie = cachedMovie || fetchedMovie || null;
+
+  // Fetch similar movies (needs movie title)
   const { data: similarData, isLoading: loadingSimilar } = useQuery({
     queryKey: ['similar', tmdbId],
     queryFn: async () => {
-      // We need to get the movie title first; find it from homepage cache or similar
-      const homepageData = queryClient.getQueryData<{ sections: { movies: MovieRec[] }[] }>(['homepage']);
-      let movieTitle = '';
-      if (homepageData) {
-        for (const section of homepageData.sections) {
-          const found = section.movies.find((m) => m.tmdbId === tmdbId);
-          if (found) { movieTitle = found.title; break; }
-        }
-      }
+      const movieTitle = movie?.title;
       if (!movieTitle) {
-        // Try to search for the movie title
-        const { searchMovies } = await import('../api/movies');
+        // Try search
         const searchData = await searchMovies(String(tmdbId), 1);
-        movieTitle = searchData.results[0]?.title || '';
+        const title = searchData.results[0]?.title;
+        if (!title) return { recommendations: [] };
+        return getSimilarMovies([title], 12);
       }
-      if (!movieTitle) return { recommendations: [] };
       return getSimilarMovies([movieTitle], 12);
     },
     staleTime: 5 * 60 * 1000,
-    enabled: tmdbId > 0,
+    enabled: tmdbId > 0 && !!movie,
   });
-
-  // Find movie from cached data
-  const movie = findMovieInCache(queryClient, tmdbId);
 
   useEffect(() => {
     document.title = movie?.title
@@ -69,6 +91,7 @@ export default function MovieDetailPage() {
       showToast('Rating saved', 'success');
       fetchProfile();
     },
+    onError: () => showToast('Please login to rate movies', 'error'),
   });
 
   const likeMut = useMutation({
@@ -77,21 +100,20 @@ export default function MovieDetailPage() {
       showToast('Added to liked movies', 'success');
       fetchProfile();
     },
+    onError: () => showToast('Please login to like movies', 'error'),
   });
 
   const watchlistMut = useMutation({
     mutationFn: () => {
-      const inWatchlist = user?.watchlist?.includes(tmdbId);
-      return toggleWatchlist(tmdbId, inWatchlist ? 'remove' : 'add');
+      const inWl = user?.watchlist?.includes(tmdbId);
+      return toggleWatchlist(tmdbId, inWl ? 'remove' : 'add');
     },
     onSuccess: () => {
-      const inWatchlist = user?.watchlist?.includes(tmdbId);
-      showToast(
-        inWatchlist ? 'Removed from watchlist' : 'Added to watchlist',
-        'success'
-      );
+      const inWl = user?.watchlist?.includes(tmdbId);
+      showToast(inWl ? 'Removed from watchlist' : 'Added to watchlist', 'success');
       fetchProfile();
     },
+    onError: () => showToast('Please login first', 'error'),
   });
 
   const watchedMut = useMutation({
@@ -100,9 +122,16 @@ export default function MovieDetailPage() {
       showToast('Marked as watched', 'success');
       fetchProfile();
     },
+    onError: () => showToast('Please login first', 'error'),
   });
 
-  if (!movie) {
+  // Loading state
+  if (!movie && loadingMovie) {
+    return <Loader fullPage />;
+  }
+
+  // Not found
+  if (!movie && !loadingMovie) {
     return (
       <PageTransition>
         <div className="movie-detail__not-found">
@@ -114,6 +143,8 @@ export default function MovieDetailPage() {
       </PageTransition>
     );
   }
+
+  if (!movie) return null;
 
   const meta = movie.metadata;
   const posterUrl = meta?.poster_path

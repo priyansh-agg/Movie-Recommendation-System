@@ -50,8 +50,8 @@ export default function MovieRow({ title, movies, loading }: MovieRowProps) {
             ? Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="movie-row__skeleton" />
               ))
-            : movies.map((movie) => (
-                <MovieCard key={movie.tmdbId} movie={movie} />
+            : movies.map((movie, idx) => (
+                <MovieCard key={`${movie.tmdbId}-${idx}`} movie={movie} />
               ))}
         </div>
 

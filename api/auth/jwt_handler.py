@@ -11,9 +11,15 @@ import time
 from jose import jwt, JWTError
 
 
-SECRET_KEY = os.environ.get(
-    "JWT_SECRET_KEY", "dev-secret-key-change-in-production"
-)
+_DEFAULT_SECRET = "dev-secret-key-change-in-production"
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", _DEFAULT_SECRET)
+if SECRET_KEY == _DEFAULT_SECRET:
+    import warnings
+    warnings.warn(
+        "JWT_SECRET_KEY is not set — using insecure default. "
+        "Set JWT_SECRET_KEY environment variable in production!",
+        stacklevel=1,
+    )
 ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
@@ -27,7 +33,7 @@ def create_access_token(user_id: int) -> str:
     """Create a short-lived access token."""
     payload = {
         "sub": str(user_id),
-        "exp": time.time() + ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "exp": int(time.time()) + ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "type": "access",
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -37,7 +43,7 @@ def create_refresh_token(user_id: int) -> str:
     """Create a long-lived refresh token."""
     payload = {
         "sub": str(user_id),
-        "exp": time.time() + REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        "exp": int(time.time()) + REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         "type": "refresh",
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

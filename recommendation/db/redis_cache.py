@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # TTLs in seconds
 TTL_SIMILAR = 3600       # 1 hour
 TTL_USER_RECS = 900      # 15 minutes
-TTL_HOMEPAGE = 600       # 10 minutes
+TTL_HOMEPAGE = 3600      # 1 hour
 TTL_SEARCH = 1800        # 30 minutes
 TTL_POSTER = 86400       # 24 hours
 
