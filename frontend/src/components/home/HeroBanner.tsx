@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, Eye, Bookmark, Clock } from 'lucide-react';
@@ -21,8 +22,10 @@ const fadeUp = {
 
 export default function HeroBanner({ movie }: HeroBannerProps) {
   const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
   const meta = movie.metadata;
-  const backdropUrl = meta?.poster_path
+  // Prefer landscape backdrop_path, fall back to portrait poster_path
+  const backdropUrl = !imgError && meta?.poster_path
     ? `https://image.tmdb.org/t/p/w1280${meta.poster_path}`
     : null;
   const genres = meta?.genres
@@ -38,7 +41,13 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
     <div className="hero">
       {/* Background */}
       <div className="hero__backdrop">
-        {backdropUrl && <img src={backdropUrl} alt="" />}
+        {backdropUrl && (
+          <img
+            src={backdropUrl}
+            alt=""
+            onError={() => setImgError(true)}
+          />
+        )}
         <div className="hero__overlay-bottom" />
         <div className="hero__overlay-left" />
       </div>

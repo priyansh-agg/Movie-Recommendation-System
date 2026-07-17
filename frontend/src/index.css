@@ -232,7 +232,8 @@ h6 {
   background: #3b82f6;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  margin-top: -150px;  /* center without transform so float animation is uncontested */
+  margin-left: -150px;
   animation: float 35s ease-in-out infinite;
 }
 

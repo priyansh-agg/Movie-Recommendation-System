@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, Heart, Bookmark } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MovieRec } from '../../api/movies';
+import { likeMovie, toggleWatchlist } from '../../api/user';
+import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../ui/Toast';
 import './MovieCard.css';
 
 interface MovieCardProps {
@@ -18,8 +22,12 @@ function getPosterUrl(movie: MovieRec): string | null {
 
 export default function MovieCard({ movie }: MovieCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const navigate = useNavigate();
-  const posterUrl = getPosterUrl(movie);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const posterUrl = !imgError ? getPosterUrl(movie) : null;
   const genres = movie.metadata?.genres
     ?.split(',')
     .map((g) => g.trim())
@@ -30,6 +38,24 @@ export default function MovieCard({ movie }: MovieCardProps) {
     (movie.metadata?.release_date
       ? new Date(movie.metadata.release_date).getFullYear()
       : null);
+
+  const likeMut = useMutation({
+    mutationFn: () => likeMovie(movie.tmdbId),
+    onSuccess: () => {
+      showToast('Added to liked movies', 'success');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: () => showToast('Please login to like movies', 'error'),
+  });
+
+  const watchlistMut = useMutation({
+    mutationFn: () => toggleWatchlist(movie.tmdbId, 'add'),
+    onSuccess: () => {
+      showToast('Added to watchlist', 'success');
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: () => showToast('Please login first', 'error'),
+  });
 
   return (
     <motion.div
@@ -47,6 +73,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
               alt={movie.title}
               loading="lazy"
               onLoad={() => setImgLoaded(true)}
+              onError={() => { setImgError(true); setImgLoaded(true); }}
               style={{ opacity: imgLoaded ? 1 : 0 }}
             />
           </>
@@ -72,10 +99,26 @@ export default function MovieCard({ movie }: MovieCardProps) {
             </span>
           )}
           <div className="movie-card__actions">
-            <button className="movie-card__action-btn" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="movie-card__action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isAuthenticated) { showToast('Please login first', 'error'); return; }
+                likeMut.mutate();
+              }}
+              aria-label="Like this movie"
+            >
               <Heart size={14} />
             </button>
-            <button className="movie-card__action-btn" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="movie-card__action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isAuthenticated) { showToast('Please login first', 'error'); return; }
+                watchlistMut.mutate();
+              }}
+              aria-label="Add to watchlist"
+            >
               <Bookmark size={14} />
             </button>
           </div>

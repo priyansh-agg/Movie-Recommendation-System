@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -26,6 +26,7 @@ export default function MovieDetailPage() {
   const fetchProfile = useAuthStore((s) => s.fetchProfile);
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const watchlistActionRef = useRef<'add' | 'remove'>('add');
 
   // First: try to find movie in cache
   const cachedMovie = findMovieInCache(queryClient, tmdbId);
@@ -106,11 +107,15 @@ export default function MovieDetailPage() {
   const watchlistMut = useMutation({
     mutationFn: () => {
       const inWl = user?.watchlist?.includes(tmdbId);
-      return toggleWatchlist(tmdbId, inWl ? 'remove' : 'add');
+      const action = inWl ? 'remove' : 'add';
+      watchlistActionRef.current = action; // capture before async
+      return toggleWatchlist(tmdbId, action);
     },
     onSuccess: () => {
-      const inWl = user?.watchlist?.includes(tmdbId);
-      showToast(inWl ? 'Removed from watchlist' : 'Added to watchlist', 'success');
+      showToast(
+        watchlistActionRef.current === 'remove' ? 'Removed from watchlist' : 'Added to watchlist',
+        'success',
+      );
       fetchProfile();
     },
     onError: () => showToast('Please login first', 'error'),
